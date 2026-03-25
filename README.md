@@ -1,175 +1,127 @@
-# 🖐️ Control Your Mouse Using Hand Gestures via Webcam
+# 🖐️ HAND_GESTURE_MOUSE_CONTROL
 
-> Control your mouse with hand gestures using your webcam — **no physical mouse needed.**
+> Control your mouse with hand gestures via webcam. **No physical mouse needed.**
 
-![Python](https://img.shields.io/badge/Python-3.8%2B-blue?style=for-the-badge&logo=python)
-![MediaPipe](https://img.shields.io/badge/MediaPipe-Hand%20Tracking-green?style=for-the-badge)
-![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey?style=for-the-badge&logo=windows)
-![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
-
----
-
-## 📖 Overview
-
-This project enables **touchless mouse control** through real-time hand gesture recognition via your webcam. Using **MediaPipe** for hand landmark detection and **PyAutoGUI** / **ctypes** for mouse control, you can move your cursor, click, scroll, and more — all with just your hand in front of a camera.
-
-Perfect for accessibility use cases, presentations, or just the sheer coolness of it. ✨
+![Python](https://img.shields.io/badge/Python-3.8+-blue?style=flat-square&logo=python&logoColor=white)
+![MediaPipe](https://img.shields.io/badge/MediaPipe-0.10+-green?style=flat-square)
+![Platform](https://img.shields.io/badge/Windows%20%7C%20Linux%20%7C%20Mac-supported-0078D6?style=flat-square)
 
 ---
 
-## 🗂️ Project Structure
-
-```
-Hand_Gesture_Mouse_Control/
-│
-├── hand_landmarker.task          # MediaPipe hand landmark model
-├── hand_pose_controller.py       # Core gesture-to-action mapping logic
-├── hand_tracker_edge.py          # Edge-detection-based hand tracker
-├── hand_tracker_renderer.py      # Renders hand landmarks on webcam feed
-├── manager_hand_solo.py          # Single-hand session manager
-├── mouse_controller.py           # Mouse event abstraction layer
-├── virtual_mouse_new.py          # Main entry point (latest version)
-├── virtual_mouse_fullscreen.py   # Fullscreen virtual mouse mode
-├── run_mouse_controller.sh       # Shell script to launch the controller
-├── README.md
-└── TODO.md
-```
-
----
-
-## ✨ Features
-
-- 🖱️ **Cursor Movement** — Move your index finger to control the mouse pointer
-- 👆 **Left Click** — Pinch gesture (index + thumb)
-- ✌️ **Right Click** — Two-finger gesture
-- 📜 **Smooth Scrolling** — Platform-aware smooth scroll (Windows-native via `ctypes`)
-- 🖥️ **Fullscreen Mode** — Dedicated fullscreen virtual mouse experience
-- ⚡ **Low Latency** — Optimized frame-by-frame gesture detection
-- 🧠 **AI-Powered** — Uses MediaPipe's hand landmark model (21 keypoints per hand)
-
----
-
-## 🛠️ Tech Stack
-
-| Library | Purpose |
-|---|---|
-| `mediapipe` | Hand landmark detection (21 keypoints) |
-| `opencv-python` | Webcam capture & frame rendering |
-| `pyautogui` | Cross-platform mouse control |
-| `ctypes` | Windows-native scroll events |
-| `platform` | OS detection for platform-aware behavior |
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Python 3.8+
-- A working webcam
-- Windows OS (for full scroll support)
-
-### Installation
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/Dubal-prayag/Control-your-mouse-using-hand-gestures-via-webcam.git
-cd Control-your-mouse-using-hand-gestures-via-webcam
-
-# 2. Create and activate a virtual environment
-python -m venv venv
-venv\Scripts\activate        # Windows
-# source venv/bin/activate   # macOS/Linux
-
-# 3. Install dependencies
-pip install mediapipe opencv-python pyautogui
-```
-
-### Running the App
-
-```bash
-# Option 1: Run directly
-python virtual_mouse_new.py
-
-# Option 2: Run fullscreen mode
-python virtual_mouse_fullscreen.py
-
-# Option 3: Use the shell script
-bash run_mouse_controller.sh
-```
-
----
-
-## 🤌 Gesture Reference
+## ✋ Gestures
 
 | Gesture | Action |
 |---|---|
-| ☝️ Index finger up | Move cursor |
-| 🤏 Index + Thumb pinch | Left click |
-| ✌️ Index + Middle finger | Right click |
-| 🖐️ Open palm (move up/down) | Scroll |
-| ✊ Closed fist | Drag / Hold click |
+| ☝️ Index finger only | Move cursor |
+| 🤏 Thumb + Index pinch | Left click |
+| 🤏 Thumb + Middle pinch | Right click |
+| ✌️ Index + Middle UP | Scroll (hand up = up, hand down = down) |
+| 🖖 Index + Middle + Ring, hold 2s | Screenshot |
 
-> **Tip:** Ensure good lighting and keep your hand within the webcam frame for best accuracy.
+---
+
+## ⌨️ Hotkeys
+
+| Key | Action |
+|---|---|
+| `Q` / `E` | Pinch threshold looser / tighter |
+| `W` | Reset pinch threshold |
+| `A` / `D` | Scroll faster / slower |
+| `S` | Reset scroll speed |
+| `ESC` | Exit |
+
+---
+
+## ⚡ Why scroll works here (and not elsewhere)
+
+`pyautogui.scroll()` on Windows sends `WHEEL_DELTA = 120` per call — one hard coarse jump. It cannot be made smooth.
+
+**new feature fix:** Uses `ctypes.windll.user32.mouse_event()` directly with a small delta (15–40 units) per frame → true butter-smooth scrolling. PyAutoGUI is bypassed entirely for scrolling on Windows.
+
+| Platform | Scroll engine |
+|---|---|
+| Windows | `ctypes` `MOUSEEVENTF_WHEEL` direct |
+| macOS | `pyautogui.scroll()` (works fine natively) |
+| Linux | `xdotool click` with fallback to pyautogui |
 
 ---
 
 ## ⚙️ How It Works
 
 ```
-Webcam Feed
-    │
-    ▼
-MediaPipe Hand Landmark Detection
-    │  (21 keypoints per hand)
-    ▼
-Gesture Classification (hand_pose_controller.py)
-    │  (pinch distance, finger angles, etc.)
-    ▼
-Mouse Event Dispatch (mouse_controller.py)
-    │  (move / click / scroll)
-    ▼
-OS-Level Mouse Control
-    │  (PyAutoGUI + ctypes on Windows)
-    ▼
-Screen Response
+Webcam  →  MediaPipe (21 keypoints/hand)  →  Gesture Classifier  →  Mouse Event  →  Screen
 ```
 
-### Platform-Aware Scrolling
-
-On Windows, standard `pyautogui.scroll()` can feel broken or laggy. This project bypasses it entirely using `ctypes.windll.user32.mouse_event` with `MOUSEEVENTF_WHEEL` for silky-smooth scroll events.
-
----
-
-## 📋 TODO
-
-See [`TODO.md`](TODO.md) for planned features and known issues.
+- **MediaPipe** detects 21 hand landmarks per frame in `VIDEO` mode
+- **Gesture classifier** uses normalised pinch distances + finger extension checks
+- **Confirmation engine** requires N stable frames before firing clicks (prevents flicker)
+- **Scroll engine** blends velocity from hand speed + base delta so there's always a guaranteed minimum scroll even with slow movement
+- **Mouse smoothing** adapts between slow (precision) and fast (responsiveness) modes based on hand speed
 
 ---
 
-## 🤝 Contributing
+## 🚀 Get Started
 
-Contributions, issues, and feature requests are welcome!
+**1. Get the MediaPipe model**
+```bash
+curl -o hand_landmarker.task https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task
+```
 
-1. Fork the repo
-2. Create your branch: `git checkout -b feature/your-feature`
-3. Commit your changes: `git commit -m 'Add your feature'`
-4. Push to the branch: `git push origin feature/your-feature`
-5. Open a Pull Request
+**2. Install dependencies**
+```bash
+pip install mediapipe opencv-python pyautogui numpy
+```
 
----
+**3. Run**
+```bash
+python virtual_mouse_new.py
+```
 
-## 👤 Author
-
-**Dubal Prayag**
-- GitHub: [@Dubal-prayag](https://github.com/Dubal-prayag)
-
----
-
-## 📄 License
-
-This project is open source and available under the [MIT License](LICENSE).
+> **Requirements:** Python 3.8+, a working webcam, decent lighting. `xdotool` required on Linux for best scroll support.
 
 ---
 
-> *Built with ❤️ and a lot of hand-waving.*
+## 🧠 Tech Stack
+
+| Library | Role |
+|---|---|
+| `mediapipe >= 0.10` | 21-keypoint hand landmark detection |
+| `opencv-python` | Webcam capture & frame rendering |
+| `ctypes` | Native Windows smooth scroll via Win32 API |
+| `pyautogui` | Click, cursor move, screenshot |
+| `numpy` | Geometry math & smoothing |
+
+---
+
+## 🎛️ Tuning (edit at top of file)
+
+| Parameter | Default | What it does |
+|---|---|---|
+| `CLICK_THRESH` | `0.30` | Pinch distance to trigger a click |
+| `SCROLL_DELTA_BASE` | `35` | Min scroll units sent per frame |
+| `SCROLL_DELTA_MAX` | `110` | Max scroll units per frame (≈ 1 notch) |
+| `SCROLL_SPEED_MUL` | `3500` | How much hand speed amplifies scroll |
+| `SCROLL_MOMENTUM` | `0.78` | Velocity kept per frame after gesture ends |
+| `SMOOTH_SLOW` | `0.10` | Cursor smoothing when hand is still |
+| `SMOOTH_FAST` | `0.45` | Cursor smoothing when hand is moving |
+| `CONFIRM_FRAMES_CLICK` | `4` | Stable frames needed before click fires |
+| `SHOT_HOLD` | `2.0s` | How long to hold screenshot gesture |
+
+---
+
+## 📁 Files
+
+```
+virtual_mouse_new.py          ← this file (main entry point)
+virtual_mouse_fullscreen.py   ← fullscreen variant
+hand_pose_controller.py       ← gesture → action logic
+hand_tracker_edge.py          ← edge-based hand tracking
+hand_tracker_renderer.py      ← landmark overlay rendering
+mouse_controller.py           ← mouse event abstraction
+manager_hand_solo.py          ← single-hand session manager
+hand_landmarker.task          ← MediaPipe model (download separately)
+```
+
+---
+
+**Made by [Dubal Prayag](https://github.com/Dubal-prayag)** · *Built with ❤️ and a lot of hand-waving*
